@@ -7,10 +7,11 @@ PROCEDURE fun1(a:INTEGER);
 
 BEGIN
 x:=9;
-IF x<a THEN y:=b;
+WHILE x<a DO y:=b;
 END;
 
 BEGIN
+WRITE(a10);
+READ(b, c);
 x:=90;
 END.
-

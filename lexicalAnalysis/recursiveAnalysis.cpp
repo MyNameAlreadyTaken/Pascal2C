@@ -1,93 +1,71 @@
 #define _CRT_SECURE_NO_WARNINGS
-#include <iostream>
-#include <map>
-#include <set>
-#include <vector>
-#include "lexicalAnalysis.h"
 
-using namespace std;
+#include "recursiveAnalysis.h"
 
-static vector<typeValue> vec = domain();
-static int i = 0;
-static map<string, set<int>> first;
-
-void program();
-void proghead();
-void block();
-void consexpl();
-void consdefi();
-void varexpl();
-void conssuff();
-void vardefi();
-void varsuff();
-void procdefi();
-void typeil();
-void procedh();
-void procsuff();
-void assipro();
-void sentence();
-void suffix();
-void ifsent();
-void read();
-void whilsent();
-void idsuff();
-void Write();
-void compsent();
-void Exprsuff();
-void sentsuff();
-void Conditio();
-void termsuff();
-void Express();
-void term();
-void Factsuff();
-void argument();
-void Factor();
-void addoper();
-void Muloper();
-void respoper();
-void match(int i);
-void match();
-
-
-void program() {  //³ÌĞò
+void program() {  //ç¨‹åº
 	proghead();
 	block();
 	match(DOT);
+	printTag();
+	buf += "return 0;\n}\n";
 }
 
-void proghead() { //³ÌĞòÊ×²¿
+void proghead() { //ç¨‹åºé¦–éƒ¨
 	match(PROGRAM);
 	match(STR);
+	filename = vec[i - 1].key;
 	match(SEMICOLON);
 }
 
-void block() { //·Ö³ÌĞò
+void block() { //åˆ†ç¨‹åº
+	++level;
 	consexpl();
+	if (buf[buf.size() - 1] != '\n')
+		buf.push_back('\n');
 	varexpl();
+	if (!(buf[buf.size() - 1] == '\n' && buf[buf.size() - 2] == '\n'))
+		buf.push_back('\n');
 	procdefi();
+	if (!(buf[buf.size() - 1] == '\n' && buf[buf.size() - 2] == '\n'))
+		buf.push_back('\n');
+	if (isMain && level == 1) {
+		buf += "int main() {\n";
+		isMain = false;
+		++tag;
+	}
 	compsent();
+	--level;
 }
 
-void consexpl() { //³£Á¿ËµÃ÷²¿·Ö
+void consexpl() { //å¸¸é‡è¯´æ˜éƒ¨åˆ†
 	if (vec[i].value == CONST) {
 		match(CONST);
+		printTag();
+		buf += "const int ";
 		consdefi();
 		conssuff();
 		match(SEMICOLON);
+		addSemicolon();
+		// buf += ";\n";
 	}
 	else
 		match();
 }
 
-void consdefi() { //³£Á¿¶¨Òå
+void consdefi() { //å¸¸é‡å®šä¹‰
 	match(STR);
+	buf += vec[i - 1].key;
+	buf.push_back(' ');
 	match(ASSIGN);
+	buf += "= ";
 	match(NUM);
+	buf += vec[i - 1].key;
 }
 
-void varexpl() { //±äÁ¿ËµÃ÷²¿·Ö
+void varexpl() { //å˜é‡è¯´æ˜éƒ¨åˆ†
 	if (vec[i].value == VAR) {
 		match(VAR);
+		printTag();
 		vardefi();
 		varsuff();
 	}
@@ -95,9 +73,10 @@ void varexpl() { //±äÁ¿ËµÃ÷²¿·Ö
 		match();
 }
 
-void conssuff() { //³£Á¿¶¨Òåºó×º
+void conssuff() { //å¸¸é‡å®šä¹‰åç¼€
 	if (vec[i].value == COMMA) {
 		match(COMMA);
+		buf += ", ";
 		consdefi();
 		conssuff();
 	}
@@ -105,15 +84,25 @@ void conssuff() { //³£Á¿¶¨Òåºó×º
 		match();
 }
 
-void vardefi() { //±äÁ¿¶¨Òå
+void vardefi() { //å˜é‡å®šä¹‰
+	printTag();
+	buf += "<type> ";
 	match(STR);
+	buf += vec[i - 1].key;
 	idsuff();
 	match(COLON);
 	typeil();
+	string type = vec[i - 1].key;
+	if (type == "INTEGER")
+		buf.replace(buf.find("<type>"), 6, "int");
+	else if (type == "REAL")
+		buf.replace(buf.find("<type>"), 6, "short");
 	match(SEMICOLON);
+	addSemicolon();
+	//buf += ";\n";
 }
 
-void varsuff() { //±äÁ¿¶¨Òåºó×º
+void varsuff() { //å˜é‡å®šä¹‰åç¼€
 	if (first["vardefi"].find(vec[i].value) != first["vardefi"].end()) {
 		vardefi();
 		varsuff();
@@ -122,49 +111,71 @@ void varsuff() { //±äÁ¿¶¨Òåºó×º
 		match();
 }
 
-void procdefi() { //¹ı³ÌËµÃ÷²¿·Ö
+void procdefi() { //è¿‡ç¨‹è¯´æ˜éƒ¨åˆ†
 	if (first["procedh"].find(vec[i].value) != first["procedh"].end()) {
 		procedh();
 		block();
 		match(SEMICOLON);
+		printTag();
+		buf += "return;\n";
+		--tag;
+		printTag();
+		buf += "}\n";
 		procsuff();
 	}
 	else
 		match();
 }
 
-void typeil() { //ÀàĞÍ
+void typeil() { //ç±»å‹
 	if (vec[i].value == INTEGER)
 		match(INTEGER);
 	else
 		match(REAL);
 }
 
-void procedh() { //¹ı³ÌÊ×²¿
+void procedh() { //è¿‡ç¨‹é¦–éƒ¨
 	match(PROCEDURE);
+	printTag();
+	buf += "void ";
 	match(STR);
+	buf += vec[i - 1].key;
+	buf.push_back('(');
 	argument();
 	match(SEMICOLON);
+	buf += "{\n";
+	++tag;
 }
 
-void procsuff() { //¹ı³ÌËµÃ÷²¿·Öºó×º
+void procsuff() { //è¿‡ç¨‹è¯´æ˜éƒ¨åˆ†åç¼€
 	if (first["procedh"].find(vec[i].value) != first["procedh"].end()) {
 		procedh();
 		block();
 		match(SEMICOLON);
+		printTag();
+		buf += "return;\n";
+		--tag;
+		printTag();
+		buf += "}\n";
 		procsuff();
 	}
 	else
 		match();
 }
 
-void assipro() { //¸³Öµ»òµ÷ÓÃÓï¾ä
+void assipro() { //èµ‹å€¼æˆ–è°ƒç”¨è¯­å¥
 	match(STR);
+	printTag();
+	buf += vec[i - 1].key;
+	buf.push_back(' ');
 	match(VAL);
+	buf += "= ";
 	suffix();
+	addSemicolon();
+	//buf += ";\n";
 }
 
-void sentence() { //Óï¾ä
+void sentence() { //è¯­å¥
 	if (first["assipro"].find(vec[i].value) != first["assipro"].end())
 		assipro();
 	else if (first["ifsent"].find(vec[i].value) != first["ifsent"].end())
@@ -173,7 +184,7 @@ void sentence() { //Óï¾ä
 		whilsent();
 	else if (first["read"].find(vec[i].value) != first["read"].end())
 		read();
-	else if (first["Write"].find(vec[i].value) != first["Write"].end())
+	else if (first["write"].find(vec[i].value) != first["write"].end())
 		Write();
 	else if (first["compsent"].find(vec[i].value) != first["compsent"].end())
 		compsent();
@@ -181,66 +192,107 @@ void sentence() { //Óï¾ä
 		match();
 }
 
-void suffix() { //ºó×º
+void suffix() { //åç¼€
 	if (vec[i].value == LROUNDB) {
 		match(LROUNDB);
+		buf.push_back('(');
 		Express();
 		match(RROUNDB);
+		addRroundb();
+		buf.push_back(' ');
 	}
 	else
 		Express();
 }
 
-void ifsent() { //Ìõ¼şÓï¾ä
+void ifsent() { //æ¡ä»¶è¯­å¥
 	match(IF);
+	printTag();
+	buf += "if (";
 	Conditio();
+	addRroundb();
+	buf += " {\n";
 	match(THEN);
+	++tag;
 	sentence();
+	--tag;
+	printTag();
+	buf += "}\n";
 }
 
-void read() { //¶ÁÓï¾ä
+void read() { //è¯»è¯­å¥
 	match(READ);
+	printTag();
+	buf += "scanf";
 	match(LROUNDB);
+	buf.push_back('(');
 	match(STR);
+	buf += vec[i - 1].key;
 	idsuff();
 	match(RROUNDB);
+	addRroundb();
+	buf += ";\n";
+	if (!io) {
+		buf = "#include <stdio.h>\n\n" + buf;
+		io = true;
+	}
 }
 
-void whilsent() { //µ±ĞÍÑ­»·Óï¾ä
+void whilsent() { //å½“å‹å¾ªç¯è¯­å¥
 	match(WHILE);
+	printTag();
+	buf += "while (";
 	Conditio();
+	addRroundb();
+	buf += " {\n";
 	match(DO);
+	++tag;
 	sentence();
+	--tag;
+	printTag();
+	buf += "}\n";
 }
 
-void idsuff() { //±êÊ¶·ûºó×º
+void idsuff() { //æ ‡è¯†ç¬¦åç¼€
 	if (vec[i].value == COMMA) {
 		match(COMMA);
+		buf += ", ";
 		match(STR);
+		buf += vec[i - 1].key;
 		idsuff();
 	}
 	else
 		match();
 }
 
-void Write() { // Ğ´Óï¾ä
+void Write() { // å†™è¯­å¥
 	match(WRITE);
+	printTag();
+	buf += "printf";
 	match(LROUNDB);
+	buf.push_back('(');
 	Express();
 	Exprsuff();
 	match(RROUNDB);
+	addRroundb();
+	buf += ";\n";
+	if (!io) {
+		buf = "#include <stdio.h>\n\n" + buf;
+		io = true;
+	}
 }
 
-void compsent() { //¸´ºÏÓï¾ä
+void compsent() { //å¤åˆè¯­å¥
 	match(BEGIN);
 	sentence();
 	sentsuff();
 	match(END);
 }
 
-void Exprsuff() { //±í´ïÊ½ºó×º
+void Exprsuff() { //è¡¨è¾¾å¼åç¼€
 	if (vec[i].value == COMMA) {
 		match(COMMA);
+		buf += ", ";
 		Express();
 		Exprsuff();
 	}
@@ -248,7 +300,7 @@ void Exprsuff() { //±í´ïÊ½ºó×º
 		match();
 }
 
-void sentsuff() { //Óï¾äºó×º
+void sentsuff() { //è¯­å¥åç¼€
 	if (vec[i].value == SEMICOLON) {
 		match(SEMICOLON);
 		sentence();
@@ -258,7 +310,7 @@ void sentsuff() { //Óï¾äºó×º
 		match();
 }
 
-void Conditio() { //Ìõ¼ş
+void Conditio() { //æ¡ä»¶
 	if (vec[i].value == ODD) {
 		match(ODD);
 		Express();
@@ -270,7 +322,7 @@ void Conditio() { //Ìõ¼ş
 	}
 }
 
-void termsuff() { //Ïîºó×º
+void termsuff() { //é¡¹åç¼€
 	if (first["addoper"].find(vec[i].value) != first["addoper"].end()) {
 		addoper();
 		term();
@@ -280,14 +332,16 @@ void termsuff() { //Ïîºó×º
 		match();
 }
 
-void Express() { //±í´ïÊ½
+void Express() { //è¡¨è¾¾å¼
 	if (vec[i].value == ADD) {
 		match(ADD);
+		buf += "+ ";
 		term();
 		termsuff();
 	}
 	else if (vec[i].value == SUB) {
 		match(SUB);
+		buf += "- ";
 		term();
 		termsuff();
 	}
@@ -297,13 +351,13 @@ void Express() { //±í´ïÊ½
 	}
 }
 
-void term() { //Ïî
+void term() { //é¡¹
 	Factor();
 	Factsuff();
 }
 
-void Factsuff() { //Òò×Óºó×º
-	if (first["Muloper"].find(vec[i].value) != first["Muloper"].end()) {
+void Factsuff() { //å› å­åç¼€
+	if (first["muloper"].find(vec[i].value) != first["muloper"].end()) {
 		Muloper();
 		Factor();
 		Factsuff();
@@ -312,73 +366,111 @@ void Factsuff() { //Òò×Óºó×º
 		match();
 }
 
-void argument() { //²ÎÊı²¿·Ö
+void argument() { //å‚æ•°éƒ¨åˆ†
 	match(LROUNDB);
+	buf += "<type> ";
 	match(STR);
+	buf += vec[i - 1].key;
 	match(COLON);
 	typeil();
+	string type = vec[i - 1].key;
+	if (type == "INTEGER")
+		buf.replace(buf.find("<type>"), 6, "int");
+	else if (type == "REAL")
+		buf.replace(buf.find("<type>"), 6, "short");
 	match(RROUNDB);
+	addRroundb();
+	buf.push_back(' ');
 }
 
-void Factor() { //Òò×Ó
-	if (vec[i].value == STR)
+void Factor() { //å› å­
+	if (vec[i].value == STR) {
 		match(STR);
-	else if (vec[i].value == NUM)
+		buf += vec[i - 1].key;
+		buf.push_back(' ');
+	}
+	else if (vec[i].value == NUM) {
 		match(NUM);
+		buf += vec[i - 1].key;
+		buf.push_back(' ');
+	}
 	else {
 		match(LROUNDB);
+		buf.push_back('(');
 		Express();
 		match(RROUNDB);
+		addRroundb();
+		buf.push_back(' ');
 	}
 }
 
-void addoper() { //¼ÓĞÍÔËËã·û
-	if (vec[i].value == ADD)
+void addoper() { //åŠ å‹è¿ç®—ç¬¦
+	if (vec[i].value == ADD) {
 		match(ADD);
-	else
+		buf += "+ ";
+	}
+	else {
 		match(SUB);
+		buf += "- ";
+	}
 }
 
-void Muloper() { //³ËĞÍÔËËã·û
-	if (vec[i].value == MUL)
+void Muloper() { //ä¹˜å‹è¿ç®—ç¬¦
+	if (vec[i].value == MUL) {
 		match(MUL);
-	else
+		buf += "* ";
+	}
+	else {
 		match(DEV);
+		buf += "/ ";
+	}
 }
 
-void respoper() { //¹ØÏµÔËËã·û
-	if (vec[i].value == ASSIGN)
+void respoper() { //å…³ç³»è¿ç®—ç¬¦
+	if (vec[i].value == ASSIGN) {
 		match(ASSIGN);
-	else if (vec[i].value == NE)
+		buf += "== ";
+	}
+	else if (vec[i].value == NE) {
 		match(NE);
-	else if (vec[i].value == LT)
+		buf += "!= ";
+	}
+	else if (vec[i].value == LT) {
 		match(LT);
-	else if (vec[i].value == LE)
+		buf += "< ";
+	}
+	else if (vec[i].value == LE) {
 		match(LE);
-	else if (vec[i].value == GT)
+		buf += "<= ";
+	}
+	else if (vec[i].value == GT) {
 		match(GT);
-	else
+		buf += "> ";
+	}
+	else {
 		match(GE);
+		buf += ">= ";
+	}
 }
 
 void match(int n) {
 	if (i < vec.size()) {
 		if (vec[i].value == n) {
-			i += 1;
+			++i;
 			return;
 		}
 		else {
-			cout << "¸Ã³ÌĞò²»·ûºÏPASCALÎÄ·¨¡£" << endl;
+			cout << "è¯¥ç¨‹åºä¸ç¬¦åˆPASCALæ–‡æ³•ã€‚" << endl;
 			if (i == 0)
-				cout << "µÚ1ĞĞ³öÏÖ´íÎó¡£" << endl;
+				cout << "ç¬¬1è¡Œå‡ºç°é”™è¯¯ã€‚" << endl;
 			else
-				cout << "µÚ" << vec[i - 1].line << "ĞĞ³öÏÖ´íÎó¡£" << endl;
+				cout << "ç¬¬" << vec[i - 1].line << "è¡Œå‡ºç°é”™è¯¯ã€‚" << endl;
 			exit(1);
 		}
 	}
 	else {
-		cout << "¸Ã³ÌĞò²»·ûºÏPASCALÎÄ·¨¡£" << endl;
-		cout << "µÚ" << vec[vec.size() - 1].line << "ĞĞ³öÏÖ´íÎó¡£" << endl;
+		cout << "è¯¥ç¨‹åºä¸ç¬¦åˆPASCALæ–‡æ³•ã€‚" << endl;
+		cout << "ç¬¬" << vec[vec.size() - 1].line << "è¡Œå‡ºç°é”™è¯¯ã€‚" << endl;
 		exit(1);
 	}
 }
@@ -387,47 +479,62 @@ void match() {
 	return;
 }
 
-void setFirst() {
-	first["program"] = set<int>({ PROGRAM });
-	first["proghead"] = set<int>({ PROGRAM });
-	first["block"] = set<int>({ CONST, PROCEDURE, BEGIN });
-	first["consexpl"] = set<int>({ CONST, 0 });
-	first["consdefi"] = set<int>({ STR });
-	first["varexpl"] = set<int>({ VAR, 0 });
-	first["conssuff"] = set<int>({ COMMA, 0 });
-	first["vardefi"] = set<int>({ STR });
-	first["varsuff"] = set<int>({ STR });
-	first["procdefi"] = set<int>({ PROCEDURE, 0 });
-	first["typeil"] = set<int>({ INTEGER, REAL });
-	first["procedh"] = set<int>({ PROCEDURE });
-	first["procsuff"] = set<int>({ PROCEDURE, 0 });
-	first["assipro"] = set<int>({ STR });
-	first["sentence"] = set<int>({ STR, IF, WHILE, READ, WRITE, BEGIN, 0 });
-	first["suffix"] = set<int>({ ADD, SUB, STR, NUM, LROUNDB });
-	first["ifsent"] = set<int>({ IF });
-	first["read"] = set<int>({ READ });
-	first["whilsent"] = set<int>({ WHILE });
-	first["idsuff"] = set<int>({ COMMA, 0 });
-	first["Write"] = set<int>({ WRITE });
-	first["compsent"] = set<int>({ BEGIN });
-	first["Exprsuff"] = set<int>({ COMMA, 0 });
-	first["sentsuff"] = set<int>({ SEMICOLON, 0 });
-	first["Conditio"] = set<int>({ ADD, SUB, STR, NUM, LROUNDB, ODD });
-	first["termsuff"] = set<int>({ ADD, SUB, 0 });
-	first["Express"] = set<int>({ ADD, SUB, STR, NUM, LROUNDB });
-	first["term"] = set<int>({ STR, NUM, LROUNDB });
-	first["Factsuff"] = set<int>({ MUL, DEV, 0 });
-	first["argument"] = set<int>({ LROUNDB });
-	first["Factor"] = set<int>({ STR, NUM, LROUNDB });
-	first["addoper"] = set<int>({ ADD, SUB });
-	first["Muloper"] = set<int>({ MUL, DEV });
-	first["respoper"] = set<int>({ ASSIGN, NE, LT, LE, GT, GE });
-	return;
-}
+// void setFirst() {
+// 	first["program"] = set<int>({ PROGRAM });
+// 	first["proghead"] = set<int>({ PROGRAM });
+// 	first["block"] = set<int>({ CONST, VAR, PROCEDURE, BEGIN });
+// 	first["consexpl"] = set<int>({ CONST, 0 });
+// 	first["consdefi"] = set<int>({ STR });
+// 	first["varexpl"] = set<int>({ VAR, 0 });
+// 	first["conssuff"] = set<int>({ COMMA, 0 });
+// 	first["vardefi"] = set<int>({ STR });
+// 	first["varsuff"] = set<int>({ STR, 0 });
+// 	first["procdefi"] = set<int>({ PROCEDURE, 0 });
+// 	first["typeil"] = set<int>({ INTEGER, REAL });
+// 	first["procedh"] = set<int>({ PROCEDURE });
+// 	first["procsuff"] = set<int>({ PROCEDURE, 0 });
+// 	first["assipro"] = set<int>({ STR });
+// 	first["sentence"] = set<int>({ STR, IF, WHILE, READ, WRITE, BEGIN, 0 });
+// 	first["suffix"] = set<int>({ ADD, SUB, STR, NUM, LROUNDB, 0 });
+// 	first["ifsent"] = set<int>({ IF });
+// 	first["read"] = set<int>({ READ });
+// 	first["whilsent"] = set<int>({ WHILE });
+// 	first["idsuff"] = set<int>({ COMMA, 0 });
+// 	first["write"] = set<int>({ WRITE });
+// 	first["compsent"] = set<int>({ BEGIN });
+// 	first["exprsuff"] = set<int>({ COMMA, 0 });
+// 	first["sentsuff"] = set<int>({ SEMICOLON, 0 });
+// 	first["condition"] = set<int>({ ADD, SUB, STR, NUM, LROUNDB, ODD });
+// 	first["termsuff"] = set<int>({ ADD, SUB, 0 });
+// 	first["express"] = set<int>({ ADD, SUB, STR, NUM, LROUNDB });
+// 	first["term"] = set<int>({ STR, NUM, LROUNDB });
+// 	first["factsuff"] = set<int>({ MUL, DEV, 0 });
+// 	first["argument"] = set<int>({ LROUNDB });
+// 	first["factor"] = set<int>({ STR, NUM, LROUNDB });
+// 	first["addoper"] = set<int>({ ADD, SUB });
+// 	first["muloper"] = set<int>({ MUL, DEV });
+// 	first["respoper"] = set<int>({ ASSIGN, NE, LT, LE, GT, GE });
+
+// 	for (auto it = first.begin(); it != first.end(); ++it) {
+// 		if (myFirst.find(it->first) == myFirst.end()) {
+// 			cout << "wrong " << it->first << endl;
+// 		}
+// 		else {
+// 			if (it->second != myFirst[it->first]) {
+// 				cout << "wrong " << it->first << endl;
+// 			}
+
+// 		}
+// 	}
+// 	return;
+// }
 
 int main() {
-	setFirst();
+	//setFirst();
 	program();
-	cout << "¸Ã³ÌĞò·ûºÏPASCALÎÄ·¨¡£" << endl;
+	ofstream fout(".//res//" + filename + ".txt");
+	cout << "è¯¥ç¨‹åºç¬¦åˆPASCALæ–‡æ³•ã€‚" << endl;
+	cout << buf;
+	fout << buf;
 	return 0;
 }

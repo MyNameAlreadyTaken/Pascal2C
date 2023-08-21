@@ -1,4 +1,5 @@
 #pragma once
+
 #define PROGRAM 1
 #define CONST 2
 #define VAR 3
@@ -16,6 +17,5 @@
 #define ODD 15
 #define REAL 16
 
-#define NUM 33
-#define STR 34
-
+#define NUM 43
+#define STR 44

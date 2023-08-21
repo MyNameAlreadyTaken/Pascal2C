@@ -1,42 +1,17 @@
 #define _CRT_SECURE_NO_WARNINGS
-#include <stdio.h>
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <malloc.h>
-#include <windows.h>
-#include <vector>
-#include "datetype.h"
-#include "opertype.h"
-#include "wordtype.h"
+
 #include "lexicalAnalysis.h"
 
 using namespace std;
 
-//∂®“Â“ª–©»´æ÷±‰¡ø
-static char buffer[BUFFER_SIZE];
-static int readNum;
-static int lastType;
-static int lastWord;
-static char token;
-static int wrong;
-static int line;
-static int row;
-static typeCode* keyHead, * sepHead;
-static vector<typeValue> vecOfType;
-
-//int main(int argc, char argv[])
-//{
-//    line = 1;
-//    row = 0;
-//    initTypeCode();
-//    //printTypeCode(keyHead);
-//    //printTypeCode(sepHead);
-//    lexcial();
-//    delete keyHead;
-//    delete sepHead;
-//    //cout << line << endl;
-//}
+// int main(int argc, char** argv) {
+//     getPreserved();
+//     line = 1;
+//     row = 0;
+//     lexcial();
+//     //cout << line << endl;
+//     return 0;
+// }
 
 void rebuildBuffer() {
     int i = 0;
@@ -59,9 +34,8 @@ void lexcial() {
     ofstream fout("res//temp.txt");
     readNum = 0;
     lastType = ISSEPRATE;
-    if (fp == NULL) {
+    if (fp == nullptr) {
         perror("Open file failed");
-        system("pause");
         return;
     }
     do {
@@ -233,7 +207,7 @@ void lexcial() {
                                     row += 1;
                             }
                             if (token == EOF) {
-                                printf("≥Ã–Ú÷–ø…ƒ‹¥Ê‘⁄Œ¥±’∫œµƒ◊¢ Õ£¨≤ªƒ‹ÕÍ≥…¥ ∑®∑÷Œˆ\n");
+                                printf("Á®ãÂ∫è‰∏≠ÂèØËÉΩÂ≠òÂú®Êú™Èó≠ÂêàÁöÑÊ≥®ÈáäÔºå‰∏çËÉΩÂÆåÊàêËØçÊ≥ïÂàÜÊûê\n");
                                 system("pause");
                                 exit(0);
                             }
@@ -283,71 +257,50 @@ void wordProc(ofstream &fout, int lasttype) {
             typeValue tmp = typeValue();
             tmp.value = NUM;
             tmp.line = line;
-            /*cout << "(";
-            cout << NUM;
-            cout << ", ";*/
-            fout << "(";
-            fout << NUM;
-            fout << ", ";
+            fout << "(" << NUM << ", ";
             string s = "";
             for (int i = 0; i < readNum; i++) {
                 s += buffer[i];
-                //cout << buffer[i];
                 fout << buffer[i];
             }
             const char* chr = s.c_str();
             tmp.key = (char*)malloc(readNum * sizeof(char));
             strcpy(tmp.key, chr);
-            //cout << ")\n";
             fout << ")\n";
             vecOfType.push_back(tmp);
         }
         else if (lasttype == ISCHAR) {
-            int temp = getValueFromKey(keyHead, buffer, readNum, STR);
+            int temp = getValueFromKey(buffer, readNum, STR);
             typeValue tmp = typeValue();
             tmp.value = temp;
             tmp.line = line;
-            /*cout << "(";
-            cout << temp;
-            cout << ", ";*/
-            fout << "(";
-            fout << temp;
-            fout << ", ";
+            fout << "(" << temp << ", ";
             string s = "";
             for (int i = 0; i < readNum; i++) {
                 s += buffer[i];
-                //cout << buffer[i];
                 fout << buffer[i];
             }
             const char* chr = s.c_str();
             tmp.key = (char*)malloc(readNum * sizeof(char));
             strcpy(tmp.key, chr);
-            //cout << ")\n";
             fout << ")\n";
             vecOfType.push_back(tmp);
         }
         else if (lasttype == ISDELIMITER) {
-            int temp = getValueFromSep(sepHead, buffer, 1, -1);
+            int temp = getValueFromSep(buffer, 1, -1);
             if (temp != -1) {
                 typeValue tmp = typeValue();
                 tmp.value = temp;
                 tmp.line = line;
-                /*cout << "(";
-                cout << temp;
-                cout << ", ";*/
-                fout << "(";
-                fout << temp;
-                fout << ", ";
+                fout << "(" << temp << ", ";
                 string s = "";
                 for (int i = 0; i < readNum; i++) {
                     s += buffer[i];
-                    //cout << buffer[i];
                     fout << buffer[i];
                 }
                 const char* chr = s.c_str();
                 tmp.key = (char*)malloc(readNum * sizeof(char));
                 strcpy(tmp.key, chr);
-                //cout << ")\n";
                 fout << ")\n";
                 vecOfType.push_back(tmp);
             }
@@ -370,120 +323,37 @@ void wordProc(ofstream &fout, int lasttype) {
 void printErr(ofstream &fout) {
     switch (wrong) {
     case UNKNOWWRONG:
-        cout << "Œ¥÷™¥ÌŒÛ in (";
-        cout << line;
-        cout << ", ";
-        cout << row - 1;
-        cout << ") ";
-        fout << "Œ¥÷™¥ÌŒÛ in (";
-        fout << line;
-        fout << ", ";
-        fout << row - 1;
-        fout << ") ";
-        //printf("Œ¥÷™¥ÌŒÛ: line " + row + ' ');
+        cout << "Êú™Áü•ÈîôËØØ in (" << line << ", " << row - 1 << ") ";
+        fout << "Êú™Áü•ÈîôËØØ in (" << line << ", " << row - 1 << ") ";
+        //printf("Êú™Áü•ÈîôËØØ: line " + row + ' ');
         break;
     case INVALIDATESTR:
-        cout << "∑«∑®◊÷∑˚¥Æ in (";
-        cout << line;
-        cout << ", ";
-        cout << row - 1;
-        cout << ") ";
-        fout << "∑«∑®◊÷∑˚¥Æ in (";
-        fout << line;
-        fout << ", ";
-        fout << row - 1;
-        fout << ") ";
+        cout << "ÈùûÊ≥ïÂ≠óÁ¨¶‰∏≤ in (" << line << ", " << row - 1 << ") ";
+        fout << "ÈùûÊ≥ïÂ≠óÁ¨¶‰∏≤ in (" << line << ", " << row - 1 << ") ";
         break;
     case INVALIDATEFLLOWT:
-        cout << "∑«∑®∏°µ„ ˝ in (";
-        cout << line;
-        cout << ", ";
-        cout << row - 1;
-        cout << ") ";
-        fout << "∑«∑®∏°µ„ ˝ in (";
-        fout << line;
-        fout << ", ";
-        fout << row - 1;
-        fout << ") ";
-        //printf("∑«∑®∏°µ„ ˝: line " + row + ' ');
+        cout << "ÈùûÊ≥ïÊµÆÁÇπÊï∞ in (" << line << ", " << row - 1 << ") ";
+        fout << "ÈùûÊ≥ïÊµÆÁÇπÊï∞ in (" << line << ", " << row - 1 << ") ";
+        //printf("ÈùûÊ≥ïÊµÆÁÇπÊï∞: line " + row + ' ');
         break;
     case INVALIDATEDELIMITER:
-        cout << "∑«∑®∑÷ΩÁ∑˚ π”√ in (";
-        cout << line;
-        cout << ", ";
-        cout << row - 1;
-        cout << ") ";
-        fout << "∑«∑®∑÷ΩÁ∑˚ π”√ in (";
-        fout << line;
-        fout << ", ";
-        fout << row - 1;
-        fout << ") ";
-        //printf("∑«∑®∑÷ΩÁ∑˚ π”√: line " + row + ' ');
+        cout << "ÈùûÊ≥ïÂàÜÁïåÁ¨¶‰ΩøÁî® in (" << line << ", " << row - 1 << ") ";
+        fout << "ÈùûÊ≥ïÂàÜÁïåÁ¨¶‰ΩøÁî® in (" << line << ", " << row - 1 << ") ";
+        //printf("ÈùûÊ≥ïÂàÜÁïåÁ¨¶‰ΩøÁî®: line " + row + ' ');
         break;
     default:
-        cout << "œµÕ≥ƒ⁄≤ø¥ÌŒÛ";
-        fout << "œµÕ≥ƒ⁄≤ø¥ÌŒÛ";
-        //printf("œµÕ≥ƒ⁄≤ø¥ÌŒÛ");
+        cout << "Á≥ªÁªüÂÜÖÈÉ®ÈîôËØØ";
+        fout << "Á≥ªÁªüÂÜÖÈÉ®ÈîôËØØ";
+        //printf("Á≥ªÁªüÂÜÖÈÉ®ÈîôËØØ");
     }
-}
-
-void initTypeCode() {
-    keyHead = new typeCode();
-    sepHead = new typeCode();
-
-    addElement(keyHead, "PROGRAM", PROGRAM);
-    addElement(keyHead, "CONST", CONST);
-    addElement(keyHead, "VAR", VAR);
-    addElement(keyHead, "INTEGER", INTEGER);
-    addElement(keyHead, "LONG", LONG);
-    addElement(keyHead, "PROCEDURE", PROCEDURE);
-    addElement(keyHead, "IF", IF);
-    addElement(keyHead, "THEN", THEN);
-    addElement(keyHead, "WHILE", WHILE);
-    addElement(keyHead, "DO", DO);
-    addElement(keyHead, "READ", READ);
-    addElement(keyHead, "WRITE", WRITE);
-    addElement(keyHead, "BEGIN", BEGIN);
-    addElement(keyHead, "END", END);
-    addElement(keyHead, "ODD", ODD);
-    addElement(keyHead, "REAL", REAL);
-
-    addElement(sepHead, "=", ASSIGN);
-    addElement(sepHead, ":=", VAL);
-    addElement(sepHead, ">=", GE);
-    addElement(sepHead, "<=", LE);
-    addElement(sepHead, "<>", NE);
-
-    addElement(sepHead, "<", LT);
-    addElement(sepHead, ">", GT);
-    addElement(sepHead, "(", LROUNDB);
-    addElement(sepHead, ")", RROUNDB);
-    addElement(sepHead, "+", ADD);
-    addElement(sepHead, "-", SUB);
-    addElement(sepHead, "*", MUL);
-    addElement(sepHead, "/", DEV);
-    addElement(sepHead, ".", DOT);
-    addElement(sepHead, ",", COMMA);
-    addElement(sepHead, ":", COLON);
-    addElement(sepHead, ";", SEMICOLON);
-    addElement(sepHead, "#", WELL);
-}
-
-void addElement(struct typeCode* head, const char* key, int value) {
-    typeCode* tmp = new typeCode();
-    tmp->key = new char[20];
-    strcpy(tmp->key, key);
-    tmp->value = value;
-    tmp->next = head->next;
-    head->next = tmp;
     return;
 }
 
-int getValueFromKey(struct typeCode* head, const char* key, int keySize, int defVal) {
-    struct typeCode* tmp;
+int getValueFromKey(const char* key, int keySize, int defVal) {
+    //struct typeCode* tmp;
     int i = 0;
     char* cTmp = new char[keySize];
-    tmp = head;
+    //tmp = head;
     for (i = 0; i < keySize; i++) {
         if (key[i] >= 97 && key[i] <= 122)
             cTmp[i] = key[i] - 32;
@@ -491,56 +361,43 @@ int getValueFromKey(struct typeCode* head, const char* key, int keySize, int def
             cTmp[i] = key[i];
     }
     cTmp[i] = '\0';
-    //printf("%s+++++++++++%d,%d\n",cTmp,'A','a');
-    while (tmp->next != NULL) {
-        tmp = tmp->next;
-        if (strcmp(cTmp, tmp->key) == 0)
-            return tmp->value;
-    }
-    return defVal;
+    if (mp.find(cTmp) == mp.end())
+        return defVal;
+    else
+        return mp[cTmp];
 }
 
-int getValueFromSep(struct typeCode* head, const char* key, int keySize, int defVal) {
-    struct typeCode* tmp;
-    tmp = head;
-    while (tmp->next != NULL) {
-        tmp = tmp->next;
-        if (strcmp(key, tmp->key) == 0)
-            return tmp->value;
-    }
-    return defVal;
+int getValueFromSep(const char* key, int keySize, int defVal) {
+    if (mp.find(key) == mp.end())
+        return defVal;
+    else
+        return mp[key];
 }
 
-void printTypeCode(struct typeCode* head) {
-    struct typeCode* tmp;
-    tmp = head;
-    while (tmp->next != NULL) {
-        tmp = tmp->next;
-        printf("%s--%d\n", tmp->key, tmp->value);
-    }
+void printTypeCode() {
+    for (unordered_map<string, int>::iterator it = mp.begin(); it != mp.end(); it++)
+        cout << it->first << "--" << it->second << endl;
     return;
 }
 
-int isSingleSep(char cTmp) {
+bool isSingleSep(const char cTmp) {
     if (cTmp == '+' || cTmp == '-' || cTmp == '*' || cTmp == ';' || cTmp == '(' || cTmp == ')' || cTmp == '[' || cTmp == ']' || cTmp == '{' || cTmp == '}')
-        return 1;
+        return true;
     else
-        return 0;
+        return false;
 }
 
-int isDoubleSep(const char* cTmp) {
+bool isDoubleSep(const char* cTmp) {
     if (strcmp(cTmp, "<>") || strcmp(cTmp, "<=") || strcmp(cTmp, ">=") || strcmp(cTmp, "==") || strcmp(cTmp, ":="))
-        return 1;
+        return true;
     else
-        return 0;
+        return false;
 }
 
 vector<typeValue> domain() {
+    getPreserved();
     line = 1;
     row = 0;
-    initTypeCode();
     lexcial();
-    delete keyHead;
-    delete sepHead;
     return vecOfType;
 }

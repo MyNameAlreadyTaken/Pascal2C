@@ -1,4 +1,5 @@
 #pragma once
+
 #define BUFFER_SIZE 21
 #define DELIMITER_SIZE 20
 
